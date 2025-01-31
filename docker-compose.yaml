@@ -1,0 +1,68 @@
+version: "3.9"
+services:
+  directus:
+    image: directus/directus:10.9.2
+    ports:
+      - "8055:8055"
+    volumes:
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
+    environment:
+      KEY: "replace-with-random-value" # Replace with a secure random value
+      SECRET: "replace-with-random-value" # Replace with a secure random value
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "admin123"
+      DB_CLIENT: "pg" # PostgreSQL
+      DB_HOST: "postgres" # Hostname of the PostgreSQL service
+      DB_PORT: "5432" # Default PostgreSQL port
+      DB_DATABASE: "directus" # PostgreSQL database name
+      DB_USER: "postgres" # Match POSTGRES_USER in postgres service
+      DB_PASSWORD: "postgres" # Match POSTGRES_PASSWORD in postgres service
+      WEBSOCKETS_ENABLED: "true"
+      MEDUSA_API_TOKEN: "your_medusa_api_token_here"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: "directus" # Database name for Directus
+      POSTGRES_USER: "postgres" # Database username
+      POSTGRES_PASSWORD: "postgres" # Database password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  medusa:
+    image: medusajs/medusa:latest
+    ports:
+      - "9000:9000" # Expose Medusa API
+    environment:
+      # Database
+      DATABASE_URL: postgres://postgres:postgres@postgres/medusa-product
+      DB_NAME: medusa-product
+      # CORS Configuration
+      STORE_CORS: http://localhost:8000,https://docs.medusajs.com
+      ADMIN_CORS: http://localhost:5173,http://localhost:9000,https://docs.medusajs.com
+      AUTH_CORS: http://localhost:5173,http://localhost:9000,https://docs.medusajs.com
+      # Secrets
+      JWT_SECRET: supersecret
+      COOKIE_SECRET: supersecret
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # Onboarding
+      MEDUSA_ADMIN_ONBOARDING_TYPE: nextjs
+      MEDUSA_ADMIN_ONBOARDING_NEXTJS_DIRECTORY: product-storefront
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - medusa_uploads:/medusa/uploads
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+volumes:
+  pg_data:
+  medusa_uploads:
